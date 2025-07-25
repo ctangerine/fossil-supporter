@@ -1,0 +1,62 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  fastapi:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ["python", "fastapi/fastapi_main.py"]
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
+  socketio:
+    build:
+      context: .
+    ports:
+      - "9000:9000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ["python", "socket_server/socketio_main.py"]
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
+  celery-worker:
+    build:
+      context: .
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ["celery", "-A", "celery_worker.celery_app", "worker", "--loglevel=info", "--pool=solo"]
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
