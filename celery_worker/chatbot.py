@@ -1,5 +1,6 @@
 import os
 import sys
+from unittest import result
 from langchain.chat_models import init_chat_model
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.schema import SystemMessage, HumanMessage
@@ -24,7 +25,7 @@ class Chatbot:
         self.model = init_chat_model(
             "gemini-2.0-flash", 
             model_provider="google_genai",
-            google_api_key="AIzaSyCnZQ9fBebxFrzYT9bgmba8OTQYqcfx1NY"
+            google_api_key="AIzaSyAcQonDM2-mTgYPpTrcmaD2kbz671AbQ3A"
         )
 
         self.model = self.model.with_structured_output(Fossil)
@@ -52,19 +53,7 @@ class Chatbot:
             )
         )
 
-    # def ask(self, user_input: str):
-    #     messages = [
-    #         self.system_message,
-    #         HumanMessage(content=user_input)
-    #     ]
-    #     for chunk in self.model.stream(messages):
-    #         yield chunk
-
-    def ask(self, image_path: str):
-        import base64
-        
-        with open(image_path, "rb") as image_file:
-            image_data = base64.b64encode(image_file.read()).decode()
+    def ask(self, image_data: str):
         
         messages = [
             self.system_message,
@@ -74,11 +63,6 @@ class Chatbot:
             ])
         ]
 
-        response = self.model.invoke(messages)
-        return response
+        result = self.model.invoke(messages)
+        return result
     
-# Example usage:
-chatbot = Chatbot()
-response = chatbot.ask("C:\\RIKAI\\tmp_project\\R.png")
-
-print(response)

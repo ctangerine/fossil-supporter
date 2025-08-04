@@ -23,32 +23,11 @@ async def handle_chat(request: Request):
         if not message or not message.strip():
             raise HTTPException(status_code=400, detail="Missing or empty 'message' field")
 
-        conversation_id = None
+        conversation_id = data.get('conversation_id')
+        if not conversation_id or not str(conversation_id).strip():
+            raise HTTPException(status_code=400, detail="Missing or empty 'conversation_id' field")
 
-        if 'new_conversation_id' in data and str(data['new_conversation_id']).strip():
-            conversation_id = str(data['new_conversation_id']).strip()
-        elif 'conversation_id' in data and str(data['conversation_id']).strip():
-            conversation_id = str(data['conversation_id']).strip()  
-        elif 'conversation' in data:
-            conversation = data['conversation']
-            if isinstance(conversation, dict):
-                conversation_id = (
-                    str(conversation.get('new_conversation_id') or conversation.get('conversation_id') or '').strip()
-                )
-            elif isinstance(conversation, str):
-                try:
-                    parsed = json.loads(conversation)
-                    if isinstance(parsed, dict):
-                        conversation_id = (
-                            str(parsed.get('new_conversation_id') or parsed.get('conversation_id') or '').strip()
-                        )
-                    else:
-                        conversation_id = conversation.strip()
-                except json.JSONDecodeError:
-                    conversation_id = conversation.strip()
-
-        if not conversation_id:
-            raise HTTPException(status_code=400, detail="Missing or empty conversation ID")
+        conversation_id = str(conversation_id).strip()
 
         print("Conversation id:", conversation_id)
 
@@ -68,3 +47,4 @@ async def handle_chat(request: Request):
     except Exception as e:
         import traceback; traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+

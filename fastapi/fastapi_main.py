@@ -5,13 +5,10 @@ from fastapi import FastAPI
 
 app = FastAPI(title="Chatbot LLM Backend")
 
-from endpoints.helper.middleware import create_middleware 
-app = create_middleware(app)
 from fastapi.middleware.cors import CORSMiddleware
 
-from endpoints import chatbot_api, authen_api
+from endpoints import chatbot_api
 app.include_router(chatbot_api.router, prefix="/api", tags=["chat"])
-app.include_router(authen_api.router, prefix="/api", tags=["auth"])
 
 app.add_middleware(
     CORSMiddleware,

@@ -15,13 +15,29 @@ async def connect(sid, environ):
     print(f"Client connected: {sid}")
     await sio.emit('status', {'status': 'connected'}, room=sid) 
 
-# @sio.on('join_room-{id}')
-# async def join_room(sid, data):
-#     conversation_id = data.get('new_conversation_id')
-#     if conversation_id:
-#         room_name = f"chat:{conversation_id}"
-#         sio.enter_room(sid, room_name)
-#         print(f"Client {sid} joined room: {room_name}")
+@sio.event
+async def join_room(sid, data):
+    """Handle client joining a specific conversation room"""
+    print(f"join_room event received with data: {data}")
+    conversation_id = None
+
+    # Handle both dict and str cases for data['conversation_id']
+    conversation = data.get('conversation_id')
+    if isinstance(conversation, dict):
+        conversation_id = conversation.get('new_conversation_id') or conversation.get('conversation_id')
+    elif isinstance(conversation, str):
+        conversation_id = conversation  # Use as is (UUID string)
+
+    if conversation_id:
+        room_name = f"chat:{conversation_id}"
+        await sio.enter_room(sid, room_name)
+        print(f"Client {sid} joined room: {room_name}")
+        await sio.emit('room_joined', {
+            'conversation_id': conversation_id,
+            'message': f'Joined conversation {conversation_id}'
+        }, room=sid)
+    else:
+        await sio.emit('error', {'message': 'conversation_id is required'}, room=sid)
 
 
 @sio.event
@@ -45,16 +61,20 @@ async def redis_listener(sio_app):
                 continue
 
             room_name = message['channel'].decode('utf-8')
+            print(f"Received message on {room_name}: {message['data']}")
             
             try:
                 event_data = json.loads(message['data'])
                 event_name = event_data.get('type')
                 payload = event_data.get('data', {})
 
+                
+
                 if not event_name:
                     print(f"Warning: Received message without a 'type' on {room_name}")
                     continue
-                await sio_app.emit(event_name, payload)
+                await sio_app.emit(event_name, payload, room=room_name)
+                print(f"Emitted event '{event_name}' to room '{room_name}' with data: {payload}")
 
             except json.JSONDecodeError:
                 print(f"Error decoding JSON from message on {room_name}: {message['data']}")

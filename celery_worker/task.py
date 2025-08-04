@@ -31,6 +31,7 @@ def extract_content_from_chunk(chunk):
 @shared_task(bind=True)
 def process_chatbot_request(self, message: str, conversation_id: str):
     channel_name = f"chat:{conversation_id}"
+    print(f"Processing request for conversation {conversation_id} on channel {channel_name}")
 
     try:
         redis_client.publish(channel_name, json.dumps({
@@ -38,20 +39,14 @@ def process_chatbot_request(self, message: str, conversation_id: str):
             "data": {} 
         }))
 
-        complete_response = ""
+        complete_response = chatbot.ask(message)
 
-        for chunk in chatbot.ask(message):
-            chunk_content = extract_content_from_chunk(chunk)
-            
-            if chunk_content:
-                complete_response += chunk_content
-
-                redis_client.publish(channel_name, json.dumps({
-                    "type": "gen_token", 
-                    "data": {"data": chunk_content} 
-                }))
-            
-            time.sleep(0.02)
+        # If complete_response is not JSON serializable, convert it to string
+        if not isinstance(complete_response, str):
+            try:
+                complete_response = json.dumps(complete_response)
+            except TypeError:
+                complete_response = str(complete_response)
 
         redis_client.publish(channel_name, json.dumps({
             "type": "completed",
