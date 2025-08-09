@@ -14,15 +14,15 @@ def connect():
 def print_response(response):
     print('Server response on connect:', response)
 
-# @sio.on('message')
-# def on_message(data):
-#     if isinstance(data, str):
-#         data = json.loads(data)
-#     print('Received:', data)
-#     conversation_id = data.get('new_conversation_id')
-#     if conversation_id:
-#         sio.emit('join_room', {'conversation_id': conversation_id})
-#         print(f'Emitted join_room-{conversation_id} with id: {conversation_id}')
+@sio.on('message')
+def on_message(data):
+    if isinstance(data, str):
+        data = json.loads(data)
+    print('Received:', data)
+    conversation_id = data.get('new_conversation_id')
+    if conversation_id:
+        sio.emit('join_room', {'conversation_id': conversation_id})
+        print(f'Emitted join_room-{conversation_id} with id: {conversation_id}')
 
 # Listen on channel chat:{ROOM_ID}
 @sio.on('completed')
@@ -33,5 +33,5 @@ def on_completed(data):
 def disconnect():
     print('Disconnected from server')
 
-sio.connect('http://localhost:9000')
+sio.connect('https://socketio-server-production-a953.up.railway.app')
 sio.wait()
